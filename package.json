@@ -4,7 +4,7 @@
   "description": "Backend for Mini Social Feed App",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "nodemon --watch src -e ts --exec ts-node src/server.ts",
     "build": "rimraf dist && tsc",
     "start": "node dist/server.js"
   },
@@ -24,8 +24,9 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.12.7",
+    "nodemon": "^3.1.0",
     "rimraf": "^5.0.5",
-    "ts-node-dev": "^2.0.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
 }
