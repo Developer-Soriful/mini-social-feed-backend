@@ -33,4 +33,8 @@ export class CommentService {
 
     return comment;
   }
+
+  async getComments(postId: string): Promise<IComment[]> {
+    return commentRepository.findByPostId(postId);
+  }
 }

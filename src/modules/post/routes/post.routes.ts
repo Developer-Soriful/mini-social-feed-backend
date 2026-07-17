@@ -9,7 +9,7 @@ const postController = new PostController();
 // Create post requires authentication
 router.post("/", protect as any, validate(createPostSchema), postController.createPost as any);
 
-// Feed is accessible publicly (or within auth context)
-router.get("/", validate(getFeedSchema), postController.getFeed as any);
+// Feed requires authentication
+router.get("/", protect as any, validate(getFeedSchema), postController.getFeed as any);
 
 export default router;

@@ -1,4 +1,4 @@
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../../../common/middlewares/auth.middleware";
 import { CommentService } from "../service/comment.service";
 import { z } from "zod";
@@ -28,6 +28,22 @@ export class CommentController {
       res.status(201).json({
         status: "success",
         data: comment,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        status: "fail",
+        message: error.message,
+      });
+    }
+  }
+
+  async getComments(req: Request, res: Response, _next: NextFunction): Promise<void> {
+    try {
+      const postId = req.params.id;
+      const comments = await commentService.getComments(postId);
+      res.status(200).json({
+        status: "success",
+        data: comments,
       });
     } catch (error: any) {
       res.status(400).json({
