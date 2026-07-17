@@ -10,10 +10,10 @@ export const validate = (schema: AnyZodObject) => {
         params: req.params,
       });
       
-      // Assign parsed values back to req
-      req.body = parsed.body;
-      req.query = parsed.query;
-      req.params = parsed.params;
+      // Assign parsed values back to req only if they were validated in the schema
+      if (parsed.body !== undefined) req.body = parsed.body;
+      if (parsed.query !== undefined) req.query = parsed.query;
+      if (parsed.params !== undefined) req.params = parsed.params;
       
       next();
     } catch (error) {
