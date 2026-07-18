@@ -5,6 +5,8 @@ export interface IUser {
   username: string;
   email: string;
   password?: string;
+  bio?: string;
+  headline?: string;
   fcmToken?: string;
   createdAt?: Date;
   updatedAt?: Date;

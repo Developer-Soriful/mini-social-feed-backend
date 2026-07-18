@@ -27,6 +27,16 @@ const userSchema = new Schema<IUser>(
       type: String,
       default: "",
     },
+    bio: {
+      type: String,
+      default: "",
+      maxlength: [300, "Bio cannot exceed 300 characters"],
+    },
+    headline: {
+      type: String,
+      default: "",
+      maxlength: [120, "Headline cannot exceed 120 characters"],
+    },
   },
   {
     timestamps: true,

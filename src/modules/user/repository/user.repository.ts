@@ -21,4 +21,20 @@ export class UserRepository {
   async updateFcmToken(userId: string, fcmToken: string): Promise<IUser | null> {
     return UserModel.findByIdAndUpdate(userId, { fcmToken }, { new: true }).exec();
   }
+
+  async updateProfile(
+    userId: string,
+    fields: { username?: string; bio?: string; headline?: string }
+  ): Promise<IUser | null> {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      { $set: fields },
+      { new: true, runValidators: true }
+    ).exec();
+  }
+
+  async isUsernameTaken(username: string, excludeUserId: string): Promise<boolean> {
+    const user = await UserModel.findOne({ username, _id: { $ne: excludeUserId } }).lean().exec();
+    return !!user;
+  }
 }
