@@ -5,6 +5,7 @@ import postRoutes from "./modules/post/routes/post.routes";
 import likeRoutes from "./modules/like/routes/like.routes";
 import commentRoutes from "./modules/comment/routes/comment.routes";
 import userRoutes from "./modules/user/routes/user.routes";
+import notificationRoutes from "./modules/notification/routes/notification.routes";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/posts", likeRoutes);
 app.use("/api/posts", commentRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Global Error Handler Middleware
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

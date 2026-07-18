@@ -23,8 +23,13 @@ export class AuthService {
       username: input.username,
       email: input.email,
       password: hashedPassword,
-      fcmToken: input.fcmToken || "",
+      fcmToken: "",
     });
+
+    if (input.fcmToken) {
+      await userRepository.registerFcmToken(user._id!.toString(), input.fcmToken);
+      user.fcmToken = input.fcmToken;
+    }
 
     const token = jwt.sign(
       { userId: user._id!.toString(), username: user.username, email: user.email },
@@ -54,8 +59,8 @@ export class AuthService {
       throw new Error("Invalid email or password");
     }
 
-    if (input.fcmToken && user.fcmToken !== input.fcmToken) {
-      await userRepository.updateFcmToken(user._id!.toString(), input.fcmToken);
+    if (input.fcmToken) {
+      await userRepository.registerFcmToken(user._id!.toString(), input.fcmToken);
       user.fcmToken = input.fcmToken;
     }
 

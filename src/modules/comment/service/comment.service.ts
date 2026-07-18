@@ -22,11 +22,13 @@ export class CommentService {
     await postRepository.incrementComments(postId);
 
     // Trigger push notification if commenter is not the post author
-    const postAuthorId = post.author.toString();
+    const postAuthorId = (post.author as any)._id ? (post.author as any)._id.toString() : post.author.toString();
     if (postAuthorId !== userId) {
-      await notificationService.sendPushNotification(
+      await notificationService.createNotification(
         postAuthorId,
-        "New Comment! 💬",
+        userId,
+        "comment",
+        postId,
         `${username} commented: "${text.substring(0, 30)}${text.length > 30 ? "..." : ""}"`
       );
     }

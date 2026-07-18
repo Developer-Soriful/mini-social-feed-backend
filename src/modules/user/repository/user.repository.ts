@@ -22,6 +22,15 @@ export class UserRepository {
     return UserModel.findByIdAndUpdate(userId, { fcmToken }, { new: true }).exec();
   }
 
+  async registerFcmToken(userId: string, fcmToken: string): Promise<IUser | null> {
+    // Clean up duplicate token associations from other accounts on this device
+    await UserModel.updateMany(
+      { fcmToken, _id: { $ne: userId } },
+      { $set: { fcmToken: "" } }
+    ).exec();
+    return UserModel.findByIdAndUpdate(userId, { fcmToken }, { new: true }).exec();
+  }
+
   async updateProfile(
     userId: string,
     fields: { username?: string; bio?: string; headline?: string }

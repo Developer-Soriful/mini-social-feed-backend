@@ -14,6 +14,7 @@ export const getFeedSchema = z.object({
     page: z.string().optional().transform((val) => (val ? parseInt(val, 10) : 1)),
     limit: z.string().optional().transform((val) => (val ? parseInt(val, 10) : 10)),
     username: z.string().optional(),
+    strict: z.any().optional().transform((val) => val === "true" || val === true),
   }),
 });
 
@@ -65,9 +66,10 @@ export class PostController {
       const page = (req.query.page as unknown) as number;
       const limit = (req.query.limit as unknown) as number;
       const username = req.query.username as string | undefined;
+      const strict = (req.query.strict as unknown) as boolean;
       const viewerUserId = req.user?.userId;
 
-      const result = await postService.getFeed(page, limit, username, viewerUserId);
+      const result = await postService.getFeed(page, limit, username, viewerUserId, strict);
 
       res.status(200).json({
         status: "success",

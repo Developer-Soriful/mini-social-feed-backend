@@ -32,7 +32,13 @@ export class PostRepository {
     return PostModel.findByIdAndUpdate(postId, { $inc: { commentsCount: 1 } }, { new: true }).exec();
   }
 
-  async findAllPaginated(page: number, limit: number, username?: string, viewerUserId?: string): Promise<{ posts: (IPost & { isLiked: boolean })[]; total: number }> {
+  async findAllPaginated(
+    page: number,
+    limit: number,
+    username?: string,
+    viewerUserId?: string,
+    strict?: boolean
+  ): Promise<{ posts: (IPost & { isLiked: boolean })[]; total: number }> {
     const skip = (page - 1) * limit;
 
     let posts: any[] = [];
@@ -43,20 +49,31 @@ export class PostRepository {
       const matchedUsers = await UserModel.find({ username: { $regex: new RegExp(username, "i") } }).select("_id").exec();
       const matchedUserIds = matchedUsers.map(u => u._id.toString());
 
-      // Fetch all posts populated to avoid aggregation type matching issues
-      const allPosts = await PostModel.find({})
-        .sort({ createdAt: -1 })
-        .populate("author", "username email headline fcmToken")
-        .lean()
-        .exec();
+      if (strict) {
+        total = await PostModel.countDocuments({ author: { $in: matchedUserIds } }).exec();
+        posts = await PostModel.find({ author: { $in: matchedUserIds } })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate("author", "username email headline fcmToken")
+          .lean()
+          .exec();
+      } else {
+        // Fetch all posts populated to avoid aggregation type matching issues
+        const allPosts = await PostModel.find({})
+          .sort({ createdAt: -1 })
+          .populate("author", "username email headline fcmToken")
+          .lean()
+          .exec();
 
-      // Sort matched authors to the top, others below, maintaining date order
-      const matchedPosts = allPosts.filter(p => p.author && matchedUserIds.includes((p.author as any)._id.toString()));
-      const otherPosts = allPosts.filter(p => !p.author || !matchedUserIds.includes((p.author as any)._id.toString()));
+        // Sort matched authors to the top, others below, maintaining date order
+        const matchedPosts = allPosts.filter(p => p.author && matchedUserIds.includes((p.author as any)._id.toString()));
+        const otherPosts = allPosts.filter(p => !p.author || !matchedUserIds.includes((p.author as any)._id.toString()));
 
-      const sortedPosts = [...matchedPosts, ...otherPosts];
-      total = sortedPosts.length;
-      posts = sortedPosts.slice(skip, skip + limit);
+        const sortedPosts = [...matchedPosts, ...otherPosts];
+        total = sortedPosts.length;
+        posts = sortedPosts.slice(skip, skip + limit);
+      }
     } else {
       total = await PostModel.countDocuments({}).exec();
       posts = await PostModel.find({})

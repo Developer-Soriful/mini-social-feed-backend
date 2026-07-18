@@ -24,12 +24,13 @@ export class LikeService {
       await postRepository.incrementLikes(postId);
 
       // Trigger push notification if the user is not liking their own post
-      const postAuthorId = post.author.toString();
+      const postAuthorId = (post.author as any)._id ? (post.author as any)._id.toString() : post.author.toString();
       if (postAuthorId !== userId) {
-        // Find author FCM info, populate or directly fetch is handled in sendPushNotification
-        await notificationService.sendPushNotification(
+        await notificationService.createNotification(
           postAuthorId,
-          "New Like! ❤️",
+          userId,
+          "like",
+          postId,
           `${username} liked your post: "${post.text.substring(0, 30)}${post.text.length > 30 ? "..." : ""}"`
         );
       }

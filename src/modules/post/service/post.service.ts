@@ -11,8 +11,8 @@ export class PostService {
     return postRepository.create(input);
   }
 
-  async getFeed(page: number = 1, limit: number = 10, username?: string, viewerUserId?: string): Promise<{ posts: (IPost & { isLiked: boolean })[]; total: number; page: number; limit: number }> {
-    const { posts, total } = await postRepository.findAllPaginated(page, limit, username, viewerUserId);
+  async getFeed(page: number = 1, limit: number = 10, username?: string, viewerUserId?: string, strict?: boolean): Promise<{ posts: (IPost & { isLiked: boolean })[]; total: number; page: number; limit: number }> {
+    const { posts, total } = await postRepository.findAllPaginated(page, limit, username, viewerUserId, strict);
     return {
       posts,
       total,
