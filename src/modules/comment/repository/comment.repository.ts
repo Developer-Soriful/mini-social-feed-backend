@@ -11,4 +11,8 @@ export class CommentRepository {
       .sort({ createdAt: -1 })
       .exec();
   }
+  async deleteByPostId(postId: string): Promise<number> {
+    const result = await CommentModel.deleteMany({ postId }).exec();
+    return result.deletedCount ?? 0;
+  }
 }

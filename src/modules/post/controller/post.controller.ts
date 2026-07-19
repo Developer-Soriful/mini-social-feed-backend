@@ -36,7 +36,7 @@ export const deletePostSchema = z.object({
 const postService = new PostService();
 
 export class PostController {
-  async createPost(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async createPost(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -53,15 +53,12 @@ export class PostController {
         status: "success",
         data: post,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getFeed(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async getFeed(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const page = (req.query.page as unknown) as number;
       const limit = (req.query.limit as unknown) as number;
@@ -75,15 +72,12 @@ export class PostController {
         status: "success",
         data: result,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async updatePost(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async updatePost(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       const postId = req.params.id;
@@ -100,15 +94,12 @@ export class PostController {
         status: "success",
         data: post,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async deletePost(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async deletePost(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       const postId = req.params.id;
@@ -124,15 +115,12 @@ export class PostController {
         status: "success",
         data: post,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getPostById(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async getPostById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const postId = req.params.id;
       const viewerUserId = req.user?.userId;
@@ -141,11 +129,8 @@ export class PostController {
         status: "success",
         data: post,
       });
-    } catch (error: any) {
-      res.status(404).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 }

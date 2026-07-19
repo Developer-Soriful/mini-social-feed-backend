@@ -24,7 +24,7 @@ export const updateProfileSchema = z.object({
 });
 
 export class UserController {
-  async getProfile(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async getProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -37,15 +37,12 @@ export class UserController {
         status: "success",
         data: profile,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async updateProfile(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async updateProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -60,11 +57,8 @@ export class UserController {
         status: "success",
         data: profile,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 }

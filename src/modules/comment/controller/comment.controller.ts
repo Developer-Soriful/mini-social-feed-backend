@@ -12,7 +12,7 @@ export const addCommentSchema = z.object({
 const commentService = new CommentService();
 
 export class CommentController {
-  async addComment(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async addComment(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       const username = req.user?.username;
@@ -29,15 +29,12 @@ export class CommentController {
         status: "success",
         data: comment,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getComments(req: Request, res: Response, _next: NextFunction): Promise<void> {
+  async getComments(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const postId = req.params.id;
       const comments = await commentService.getComments(postId);
@@ -45,11 +42,8 @@ export class CommentController {
         status: "success",
         data: comments,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 }

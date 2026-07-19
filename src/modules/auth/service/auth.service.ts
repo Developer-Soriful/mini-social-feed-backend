@@ -3,19 +3,24 @@ import jwt from "jsonwebtoken";
 import { UserRepository } from "../../user/repository/user.repository";
 import { SignupInput, LoginInput, AuthResponse } from "../types/auth.types";
 
-const jwtSecret = process.env.JWT_SECRET || "supersecretjwtkeychangeinproduction12345";
+// JWT_SECRET is validated at startup (server.ts) 
+const jwtSecret = process.env.JWT_SECRET!;
 const userRepository = new UserRepository();
 
 export class AuthService {
   async signup(input: SignupInput): Promise<AuthResponse> {
     const existingEmail = await userRepository.findByEmail(input.email);
     if (existingEmail) {
-      throw new Error("Email already registered");
+      const err: any = new Error("Email already registered");
+      err.status = 409;
+      throw err;
     }
 
     const existingUsername = await userRepository.findByUsername(input.username);
     if (existingUsername) {
-      throw new Error("Username already taken");
+      const err: any = new Error("Username already taken");
+      err.status = 409;
+      throw err;
     }
 
     const hashedPassword = await bcrypt.hash(input.password, 10);
@@ -51,12 +56,16 @@ export class AuthService {
   async login(input: LoginInput): Promise<AuthResponse> {
     const user = await userRepository.findByEmail(input.email);
     if (!user || !user.password) {
-      throw new Error("Invalid email or password");
+      const err: any = new Error("Invalid email or password");
+      err.status = 401;
+      throw err;
     }
 
     const isMatch = await bcrypt.compare(input.password, user.password);
     if (!isMatch) {
-      throw new Error("Invalid email or password");
+      const err: any = new Error("Invalid email or password");
+      err.status = 401;
+      throw err;
     }
 
     if (input.fcmToken) {

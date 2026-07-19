@@ -12,9 +12,11 @@ The backend follows a **Domain-Driven Layered Architecture** splitting responsib
 3. **Repositories**: Encapsulated database operations (Mongoose queries and updates) to ensure clean separation from the data persistence layer.
 
 ### Key Enterprise Features
+* **Security-First**: `helmet` security headers, express rate limiting (200 req/15min global, 15 req/15min on auth routes), body payload size capped at 10kb.
 * **FCM Token Uniqueness**: Enforces unique hardware tokens across profiles to prevent target collisions when testing multiple accounts on one physical device.
 * **Strict Feeds Filtering**: Optimizes queries to filter posts strictly by username for profile activity tracking while keeping search-relevance sorting active for global feeds.
-* **Secure Session JWTs**: Standard authorization headers using JSON Web Tokens.
+* **Secure Session JWTs**: Standard authorization headers using JSON Web Tokens. JWT secret validated at startup — server refuses to boot with a missing or weak secret.
+* **Centralized Error Handling**: All errors routed through a single middleware that classifies Mongoose, Zod, JWT, and domain errors and returns safe, sanitized responses.
 
 ---
 
@@ -35,14 +37,21 @@ npm install
 ```
 
 ### 2. Environment Configuration
-Create a `.env` file in the backend root directory (see [`.env.example`](.env.example) structure below):
+Copy [`.env.example`](.env.example) to `.env` and fill in the values:
 ```env
 PORT=5000
-MONGO_URI=mongodb+map-to-your-mongodb-instance
-JWT_SECRET=super-secure-jwt-secret-key-1234
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_CLIENT_EMAIL=your-firebase-client-email@gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR-PRIVATE-KEY\n-----END PRIVATE KEY-----\n"
+NODE_ENV=production
+MONGO_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>?retryWrites=true&w=majority
+
+# Must be at least 32 random characters. Generate with: openssl rand -hex 32
+JWT_SECRET=REPLACE_WITH_A_STRONG_RANDOM_SECRET_OF_AT_LEAST_32_CHARS
+
+# Paste the full JSON from your Firebase service account key (single line)
+# Firebase Console → Project Settings → Service Accounts → Generate new private key
+FIREBASE_CREDENTIALS_JSON={"type":"service_account","project_id":"...", ...}
+
+# Optional: comma-separated allowed CORS origins (leave empty for mobile-only)
+ALLOWED_ORIGINS=
 ```
 
 ### 3. Build & Run
@@ -178,7 +187,7 @@ All requests must set `Content-Type: application/json`. Protected endpoints requ
   ```
 
 #### 3. Update Post `[Protected]`
-* **Endpoint**: `PATCH /api/posts/:id`
+* **Endpoint**: `PUT /api/posts/:id`
 * **Request Body**:
   ```json
   {
@@ -198,7 +207,13 @@ All requests must set `Content-Type: application/json`. Protected endpoints requ
 
 #### 4. Delete Post `[Protected]`
 * **Endpoint**: `DELETE /api/posts/:id`
-* **Response (204 No Content)**
+* **Response (200 OK)**:
+  ```json
+  {
+    "status": "success",
+    "data": { "_id": "6a5ab20076d12901d7438708", "text": "..." }
+  }
+  ```
 
 ---
 

@@ -9,7 +9,6 @@ export interface IComment {
   updatedAt?: Date;
 }
 
-
 const commentSchema = new Schema<IComment>(
   {
     userId: {
@@ -33,5 +32,7 @@ const commentSchema = new Schema<IComment>(
     timestamps: true,
   }
 );
+
+commentSchema.index({ postId: 1, createdAt: -1 });
 
 export const CommentModel = model<IComment>("Comment", commentSchema);

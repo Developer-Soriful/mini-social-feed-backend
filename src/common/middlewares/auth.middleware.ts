@@ -9,6 +9,7 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
+// JWT_SECRET is validated at startup (server.ts) — no fallback here
 export const protect = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   let token: string | undefined;
 
@@ -22,7 +23,7 @@ export const protect = (req: AuthenticatedRequest, res: Response, next: NextFunc
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "supersecretjwtkeychangeinproduction12345") as {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
       userId: string;
       username: string;
       email: string;
@@ -30,7 +31,7 @@ export const protect = (req: AuthenticatedRequest, res: Response, next: NextFunc
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ status: "fail", message: "Not authorized, token invalid" });
-    return;
+    // Let the global error handler classify JsonWebTokenError / TokenExpiredError
+    next(error);
   }
 };

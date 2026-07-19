@@ -1,8 +1,12 @@
+import mongoose from "mongoose";
 import { PostModel } from "../model/post.model";
 import { UserModel } from "../../user/model/user.model";
 import { CommentModel } from "../../comment/model/comment.model";
 import { LikeModel } from "../../like/model/like.model";
 import { IPost, CreatePostInput } from "../types/post.types";
+
+// Author fields safe to expose to clients — fcmToken is intentionally excluded
+const AUTHOR_PUBLIC_FIELDS = "username email headline";
 
 export class PostRepository {
   async create(input: CreatePostInput): Promise<IPost> {
@@ -10,7 +14,10 @@ export class PostRepository {
   }
 
   async findById(id: string, viewerUserId?: string): Promise<(IPost & { isLiked: boolean }) | null> {
-    const post = await PostModel.findById(id).populate("author", "username email headline").lean().exec();
+    const post = await PostModel.findById(id)
+      .populate("author", AUTHOR_PUBLIC_FIELDS)
+      .lean()
+      .exec();
     if (!post) return null;
     let isLiked = false;
     if (viewerUserId) {
@@ -32,6 +39,14 @@ export class PostRepository {
     return PostModel.findByIdAndUpdate(postId, { $inc: { commentsCount: 1 } }, { new: true }).exec();
   }
 
+  async decrementComments(postId: string): Promise<IPost | null> {
+    return PostModel.findByIdAndUpdate(
+      postId,
+      { $inc: { commentsCount: -1 } },
+      { new: true }
+    ).exec();
+  }
+
   async findAllPaginated(
     page: number,
     limit: number,
@@ -44,43 +59,82 @@ export class PostRepository {
     let posts: any[] = [];
     let total = 0;
 
-    if (username) {
-      // Find the matched user(s)
-      const matchedUsers = await UserModel.find({ username: { $regex: new RegExp(username, "i") } }).select("_id").exec();
-      const matchedUserIds = matchedUsers.map(u => u._id.toString());
+    if (username && strict) {
+      // Strict mode: only posts by exactly-matched username(s), fully in DB
+      const matchedUsers = await UserModel.find({
+        username: { $regex: new RegExp(username, "i") },
+      })
+        .select("_id")
+        .exec();
+      const matchedUserIds = matchedUsers.map((u) => u._id);
 
-      if (strict) {
-        total = await PostModel.countDocuments({ author: { $in: matchedUserIds } }).exec();
-        posts = await PostModel.find({ author: { $in: matchedUserIds } })
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .populate("author", "username email headline fcmToken")
-          .lean()
-          .exec();
-      } else {
-        // Fetch all posts populated to avoid aggregation type matching issues
-        const allPosts = await PostModel.find({})
-          .sort({ createdAt: -1 })
-          .populate("author", "username email headline fcmToken")
-          .lean()
-          .exec();
+      total = await PostModel.countDocuments({ author: { $in: matchedUserIds } }).exec();
+      posts = await PostModel.find({ author: { $in: matchedUserIds } })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("author", AUTHOR_PUBLIC_FIELDS)
+        .lean()
+        .exec();
+    } else if (username && !strict) {
+      // Fuzzy mode: matched author posts first, then rest — done entirely in MongoDB
+      // via aggregation to avoid in-memory full-collection sort
+      const matchedUsers = await UserModel.find({
+        username: { $regex: new RegExp(username, "i") },
+      })
+        .select("_id")
+        .exec();
+      const matchedUserIds = matchedUsers.map((u) => new mongoose.Types.ObjectId(u._id.toString()));
 
-        // Sort matched authors to the top, others below, maintaining date order
-        const matchedPosts = allPosts.filter(p => p.author && matchedUserIds.includes((p.author as any)._id.toString()));
-        const otherPosts = allPosts.filter(p => !p.author || !matchedUserIds.includes((p.author as any)._id.toString()));
+      const pipeline: any[] = [
+        {
+          $addFields: {
+            _sortPriority: {
+              $cond: [{ $in: ["$author", matchedUserIds] }, 0, 1],
+            },
+          },
+        },
+        { $sort: { _sortPriority: 1, createdAt: -1 } },
+        {
+          $facet: {
+            metadata: [{ $count: "total" }],
+            data: [
+              { $skip: skip },
+              { $limit: limit },
+              {
+                $lookup: {
+                  from: "users",
+                  localField: "author",
+                  foreignField: "_id",
+                  as: "author",
+                  pipeline: [
+                    {
+                      $project: {
+                        username: 1,
+                        email: 1,
+                        headline: 1,
+                      },
+                    },
+                  ],
+                },
+              },
+              { $unwind: { path: "$author", preserveNullAndEmpty: false } },
+            ],
+          },
+        },
+      ];
 
-        const sortedPosts = [...matchedPosts, ...otherPosts];
-        total = sortedPosts.length;
-        posts = sortedPosts.slice(skip, skip + limit);
-      }
+      const [result] = await PostModel.aggregate(pipeline).exec();
+      total = result.metadata[0]?.total ?? 0;
+      posts = result.data;
     } else {
+      // No filter — standard paginated feed
       total = await PostModel.countDocuments({}).exec();
       posts = await PostModel.find({})
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate("author", "username email headline fcmToken")
+        .populate("author", AUTHOR_PUBLIC_FIELDS)
         .lean()
         .exec();
     }
@@ -89,7 +143,9 @@ export class PostRepository {
     let likedPostIdSet = new Set<string>();
     if (viewerUserId && posts.length > 0) {
       const postIds = posts.map((p: any) => p._id);
-      const likes = await LikeModel.find({ userId: viewerUserId, postId: { $in: postIds } }).lean().exec();
+      const likes = await LikeModel.find({ userId: viewerUserId, postId: { $in: postIds } })
+        .lean()
+        .exec();
       likes.forEach((l: any) => likedPostIdSet.add(l.postId.toString()));
     }
 
@@ -102,7 +158,9 @@ export class PostRepository {
   }
 
   async update(id: string, text: string): Promise<IPost | null> {
-    return PostModel.findByIdAndUpdate(id, { text }, { new: true }).populate("author", "username email headline").exec();
+    return PostModel.findByIdAndUpdate(id, { text }, { new: true })
+      .populate("author", AUTHOR_PUBLIC_FIELDS)
+      .exec();
   }
 
   async delete(id: string): Promise<IPost | null> {

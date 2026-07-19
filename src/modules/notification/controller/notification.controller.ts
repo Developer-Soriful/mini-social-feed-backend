@@ -5,7 +5,7 @@ import { NotificationService } from "../service/notification.service";
 const notificationService = new NotificationService();
 
 export class NotificationController {
-  async getNotifications(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async getNotifications(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -18,15 +18,12 @@ export class NotificationController {
         status: "success",
         data: notifications,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async markAsRead(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async markAsRead(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -39,15 +36,12 @@ export class NotificationController {
         status: "success",
         message: "All notifications marked as read",
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async deleteNotification(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async deleteNotification(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       const notificationId = req.params.id;
@@ -66,11 +60,8 @@ export class NotificationController {
         status: "success",
         data: deleted,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 }

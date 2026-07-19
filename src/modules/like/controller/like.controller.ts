@@ -5,7 +5,7 @@ import { LikeService } from "../service/like.service";
 const likeService = new LikeService();
 
 export class LikeController {
-  async toggleLike(req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> {
+  async toggleLike(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.userId;
       const username = req.user?.username;
@@ -22,11 +22,8 @@ export class LikeController {
         status: "success",
         data: result,
       });
-    } catch (error: any) {
-      res.status(400).json({
-        status: "fail",
-        message: error.message,
-      });
+    } catch (error) {
+      next(error);
     }
   }
 }
